@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InstructionData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <DateTime>133983869961155464</DateTime>
+  <GameVersion>0.2.5499.24517</GameVersion>
+  <Title>LArRE Hydro</Title>
+  <Description>LArRE Dock (Hydroponics)​</Description>
+  <Author>H1net</Author>
+  <WorkshopFileHandle>0</WorkshopFileHandle>
+  <Instructions>define HydroLarreDock HASH("Hydro LArRE Dock 1")
+define LastStation 33
+define OutputStation 1
+lbn r0 HASH("StructureLarreDockHydroponics") HydroLarreDock PositionX Maximum
+bnez r0 mainLoop # larre already booted up
+move r15 1   # PendingStackStartIndex
+move r14 0   # PendingStackEndIndex
+move r13 128 # SeedingStackIndex, support up to 127 hydroponic trays
+move r12 256 # HarvestingStackIndex
+move r11 384 # EmptyStackIndex
+move r9 0    # ifWholeLineScanned
+add r8 LastStation 1 # r8: pos
+move r7 0 # seekPendingCount
+initLoop:
+add r8 r8 -1
+beq r8 OutputStation startMainLoop
+jal MoveTo
+CheckUnder:
+lbns r0 HASH("StructureLarreDockHydroponics") HydroLarreDock 255 Occupied Maximum
+brnez r0 5
+move sp r11
+push r8
+move r11 sp
+j CheckUnderJump
+lbns r0 HASH("StructureLarreDockHydroponics") HydroLarreDock 255 Seeding Maximum
+brgt r0 -1 5 # matured or seeding
+move sp r14
+push r8
+mod r14 sp 128
+j CheckUnderJump
+brgt r0 0 5 # seeding
+move sp r12
+push r8
+move r12 sp
+j CheckUnderJump
+move sp r13
+push r8
+move r13 sp
+CheckUnderJump:
+breqz r7 3 # r7: seekPendingCount
+  ble r7 10 TrySeekPending
+    move r7 0
+beqz r9 initLoop
+j mainLoop
+startMainLoop:
+move r9 1
+mainLoop:
+move r0 0
+lbns r0 HASH("StructureLarreDockHydroponics") HydroLarreDock 0 Occupied Maximum
+brgtz r0 7
+bgt r13 128 SeekSeeds
+bgt r12 256 SeekPlants
+TrySeekPending:
+add r1 r14 1
+bne r1 r15 SeekPending
+j mainLoop
+lbns r0 HASH("StructureLarreDockHydroponics") HydroLarreDock 0 SortingClass Maximum
+lbns r1 HASH("StructureLarreDockHydroponics") HydroLarreDock 0 MaxQuantity Maximum
+lbns r2 HASH("StructureLarreDockHydroponics") HydroLarreDock 0 Quantity Maximum
+breq r0 4 5 # has seeds, go down
+  brlt r2 r1 2 # now arm has plants, not full
+    jr 5 # arm full, try empty
+  breq r12 256 4 # try get plants, but no plants available, try empty
+    j SeekPlants
+brlt r2 r1 9 # has seeds, not full, go try get seeds
+  brgt r12 256 7 # has plants slots, go SeekPlants
+    brgt r11 384 5 # has empty slots, go SeekEmpty
+      move r8 OutputStation # no empty available, drop arm items
+      jal MoveTo
+      jal ActivateArm
+    j mainLoop
+  j SeekEmpty
+j SeekPlants
+breq r13 128 -8 # trying to get seeds, but no seeds available, try get plants
+  j SeekSeeds
+SeekPending:
+add r7 r7 1
+move sp r15
+peek r8
+mod r15 r15 128
+add r15 r15 1
+jal MoveTo
+j CheckUnder
+SeekSeeds:
+move r10 13
+jal Seek
+jal ActivateArm
+j CheckUnder
+SeekPlants:
+move r10 12
+jal Seek
+jal ActivateArm
+j CheckUnder
+SeekEmpty:
+move r10 11
+jal Seek
+jal ActivateArm
+j CheckUnder
+Seek:
+move sp rr10 # current stack index
+pop r8
+move rr10 sp
+MoveTo:
+sbn HASH("StructureLarreDockHydroponics") HydroLarreDock Setting r8
+yield
+lbn r0 HASH("StructureLarreDockHydroponics") HydroLarreDock Idle Maximum
+breqz r0 -2
+j ra
+ActivateArm:
+sbn HASH("StructureLarreDockHydroponics") HydroLarreDock Activate 1
+move r1 -1
+add r1 r1 1
+brgt r1 5 -3 # wait for 5 tick, then unstuck self
+yield
+lbn r0 HASH("StructureLarreDockHydroponics") HydroLarreDock Idle Maximum
+breqz r0 -4
+j ra</Instructions>
+</InstructionData>

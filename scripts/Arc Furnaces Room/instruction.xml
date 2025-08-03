@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InstructionData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <DateTime>133975887843742237</DateTime>
+  <GameVersion>0.2.5499.24517</GameVersion>
+  <Title>Arc Furnaces Room</Title>
+  <Description>Gas Sensor​</Description>
+  <Author>H1net</Author>
+  <WorkshopFileHandle>0</WorkshopFileHandle>
+  <Instructions># Device Hashes
+define GAS_SENSOR_PREFAB   HASH("StructureGasSensor")
+define GAS_SENSOR_NAME     HASH("Gas Sensor Arc Furnace")
+
+define PUMP_PREFAB         HASH("StructureVolumePump")
+define PUMP_NAME           HASH("Volume Pump Arc Furnace")
+
+define FURNACE_PREFAB      HASH("StructureArcFurnace")
+define FURNACE1_NAME       HASH("Arc Furnace 1")
+define FURNACE2_NAME       HASH("Arc Furnace 2")
+
+# Delay Settings
+define TICK_DELAY          10
+
+# Aliases
+alias vPressure    r0
+alias vCount1      r1
+alias vCount2      r2
+alias vTick        r3
+
+start:
+    add vTick vTick 1
+    mod vTick vTick TICK_DELAY
+    bne vTick 0 skipCheck
+
+    # Read pressure
+    lbn vPressure GAS_SENSOR_PREFAB GAS_SENSOR_NAME Pressure Average
+    bgt vPressure 0 pumpOn
+    sbn PUMP_PREFAB PUMP_NAME On 0
+    j loadFurnaceData
+
+pumpOn:
+    sbn PUMP_PREFAB PUMP_NAME On 1
+
+loadFurnaceData:
+    # Read ImportCount from both furnaces
+    lbn vCount1 FURNACE_PREFAB FURNACE1_NAME ImportCount Average
+    lbn vCount2 FURNACE_PREFAB FURNACE2_NAME ImportCount Average
+
+    bgt vCount1 0 activateFurnace1
+    bgt vCount2 0 activateFurnace2
+    j end
+
+activateFurnace1:
+    sbn FURNACE_PREFAB FURNACE1_NAME On 1
+    sbn FURNACE_PREFAB FURNACE1_NAME Activate 1
+
+activateFurnace2:
+    bgt vCount2 0 doFurnace2
+    j end
+
+doFurnace2:
+    sbn FURNACE_PREFAB FURNACE2_NAME On 1
+    sbn FURNACE_PREFAB FURNACE2_NAME Activate 1
+
+skipCheck:
+end:
+    yield
+    j start</Instructions>
+</InstructionData>

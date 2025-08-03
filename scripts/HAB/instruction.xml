@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InstructionData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <DateTime>133983886547786699</DateTime>
+  <GameVersion>0.2.5499.24517</GameVersion>
+  <Title>HAB</Title>
+  <Description>IC Housing​</Description>
+  <Author>H1net</Author>
+  <WorkshopFileHandle>0</WorkshopFileHandle>
+  <Instructions># Device hashes
+define GAS_SENSOR_PREFAB     HASH("StructureGasSensor")
+define GAS_SENSOR_NAME       HASH("Gas Sensor Hab 1")
+
+define LED_PREFAB            HASH("StructureConsoleLED1x2")
+define LED_NAME              HASH("LED Display (Medium) Hab 1 Atmo")
+
+define HEATER_PREFAB         HASH("StructureWallHeater")
+define HEATER_NAME           HASH("Wall Heater Hab 1")
+
+define COOLER_PREFAB         HASH("StructureWallCooler")
+define COOLER_NAME           HASH("Wall Cooler Hab 1")
+
+define GROWLIGHT_PREFAB      HASH("StructureGrowLight")
+define GROWLIGHT_NAME      HASH("Grow Light")
+
+define DAYLIGHT_PREFAB       HASH("StructureDaylightSensor")
+define DAYLIGHT_NAME         HASH("Daylight Sensor")
+
+# Constants
+define KELVIN_OFFSET         273.15
+define TICKS_PER_SCREEN      3
+
+# Aliases
+alias vTempK     r0
+alias vTempC     r1
+alias vO2        r2
+alias vCO2       r3
+alias vScreen    r4
+alias vTick      r5
+alias vLight     r6
+
+start:
+    # Read atmospheric data
+    lbn vTempK GAS_SENSOR_PREFAB GAS_SENSOR_NAME Temperature Average
+    sub vTempC vTempK KELVIN_OFFSET
+    lbn vO2    GAS_SENSOR_PREFAB GAS_SENSOR_NAME RatioOxygen Average
+    lbn vCO2   GAS_SENSOR_PREFAB GAS_SENSOR_NAME RatioCarbonDioxide Average
+
+    # Heater and cooler control
+    blt vTempC 18 heatOn
+    bgt vTempC 20 heatOff
+    bgt vTempC 25 coolOn
+    blt vTempC 23 coolOff
+
+    # Grow light control (based on daylight sensor)
+    lbn vLight DAYLIGHT_PREFAB DAYLIGHT_NAME SolarIrradiance Sum
+    sgt vLight vLight 10
+    beq vLight 0 growOn
+    sbn GROWLIGHT_PREFAB GROWLIGHT_NAME On 0
+    j screenUpdate
+
+growOn:
+    sbn GROWLIGHT_PREFAB GROWLIGHT_NAME On 1
+
+# Heater and cooler control blocks
+heatOn:
+  sbn HEATER_PREFAB HEATER_NAME On 1
+         j continue
+heatOff:
+ sbn HEATER_PREFAB HEATER_NAME On 0
+         j continue
+coolOn:
+  sbn COOLER_PREFAB COOLER_NAME On 1
+         j continue
+coolOff:
+  sbn COOLER_PREFAB COOLER_NAME On 0
+
+continue:
+    j screenUpdate
+
+# LED display logic
+screenUpdate:
+    add vTick vTick 1
+    blt vTick TICKS_PER_SCREEN updateScreen
+    move vTick 0
+    add vScreen vScreen 1
+    mod vScreen vScreen 3
+
+updateScreen:
+    beq vScreen 0 showTemp
+    beq vScreen 1 showO2
+    j showCO2
+
+showTemp:
+    sbn LED_PREFAB LED_NAME Mode 0
+    sbn LED_PREFAB LED_NAME Setting vTempC
+    j end
+
+showO2:
+    sbn LED_PREFAB LED_NAME Mode 1
+    sbn LED_PREFAB LED_NAME Setting vO2
+    j end
+
+showCO2:
+    sbn LED_PREFAB LED_NAME Mode 1
+    sbn LED_PREFAB LED_NAME Setting vCO2
+
+end:
+    yield
+    j start</Instructions>
+</InstructionData>

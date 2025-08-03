@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InstructionData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <DateTime>133971747606686075</DateTime>
+  <GameVersion>0.2.5499.24517</GameVersion>
+  <Title>LET TEST</Title>
+  <Description>LED TEST​</Description>
+  <Author>H1net</Author>
+  <WorkshopFileHandle>0</WorkshopFileHandle>
+  <Instructions># Simple test: display the number 3 on your medium LED
+define LED_PREFAB HASH("StructureDiode")
+define LED_NAME   HASH("LED TEST")
+
+MainLoop:
+sbn LED_PREFAB LED_NAME On 1
+yield
+j MainLoop</Instructions>
+</InstructionData>

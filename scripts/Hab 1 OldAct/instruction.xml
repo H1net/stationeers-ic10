@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InstructionData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <DateTime>133983875977761108</DateTime>
+  <GameVersion>0.2.5499.24517</GameVersion>
+  <Title>Hab 1 OldAct</Title>
+  <Description>LArRE Dock (Hydroponics)​</Description>
+  <Author>H1net</Author>
+  <WorkshopFileHandle>0</WorkshopFileHandle>
+  <Instructions>###############################################################################
+#  Hab 1 Atmosphere Display  IC10 script
+#  Reads named gas sensor and cycles a medium LED through:
+#     1) Temperature  (C)       LED Mode 0
+#     2) Oxygen ratio (01)      LED Mode 1 (percent)
+#     3) CO   ratio (01)      LED Mode 1 (percent)
+#  Requires:  Gas Sensor named "Gas Sensor Hab 1"
+#             Medium LED Display named "LED Display (Medium) Hab 1 Atmo"
+###############################################################################
+
+#########################################################################
+#  Constants &amp; hashes  #
+#########################################################################
+define GAS_SENSOR_PREFAB   HASH("StructureGasSensor")              # Gas Sensor
+define GAS_SENSOR_NAME     HASH("Gas Sensor Hab 1")                # Sensor name
+
+define LED_PREFAB          HASH("StructureConsoleLED1x2")          # Medium LED
+define LED_NAME            HASH("LED Display (Medium) Hab 1 Atmo") # LED name
+
+define KELVIN_OFFSET       273.15      # Convert K  C
+define TICKS_PER_SCREEN    3          # Number of ticks per display value
+
+#########################################################################
+#  Register aliases  #
+#########################################################################
+alias vTempK       r0      # Temperature in Kelvin
+alias vTempC       r1      # Temperature in Celsius
+alias vRatioO2     r2      # O ratio (01)
+alias vRatioCO2    r3      # CO ratio (01)
+alias vScreen      r4      # Current screen index (02)
+alias vTick        r5      # Tick counter
+
+#########################################################################
+#  Main loop  #
+#########################################################################
+start:
+    # --- Read sensor values ---
+    lbn   vTempK     GAS_SENSOR_PREFAB GAS_SENSOR_NAME Temperature          Average
+    sub   vTempC     vTempK        KELVIN_OFFSET                            # C = K - 273.
+
+    lbn   vRatioO2   GAS_SENSOR_PREFAB GAS_SENSOR_NAME RatioOxygen         Average
+    lbn   vRatioCO2  GAS_SENSOR_PREFAB GAS_SENSOR_NAME RatioCarbonDioxide  Average
+
+    # --- Tick counter and screen switch ---
+    add   vTick      vTick        1
+    blt   vTick      TICKS_PER_SCREEN   updateScreen
+    move  vTick      0                      # Reset counter
+    add   vScreen    vScreen      1
+    mod   vScreen    vScreen      3         # Cycle 012
+
+updateScreen:
+    # --- Display logic ---
+    beq   vScreen    0     showTemp
+    beq   vScreen    1     showO2
+    j                 showCO2
+
+showTemp:          # Show temperature in C
+    sbn   LED_PREFAB LED_NAME Mode     0          # Raw number mode
+    sbn   LED_PREFAB LED_NAME Setting  vTempC
+    j     endFrame
+
+showO2:            # Show % O
+    sbn   LED_PREFAB LED_NAME Mode     1          # Percentage mode
+    sbn   LED_PREFAB LED_NAME Setting  vRatioO2
+    j     endFrame
+
+showCO2:           # Show % CO
+    sbn   LED_PREFAB LED_NAME Mode     1          # Percentage mode
+    sbn   LED_PREFAB LED_NAME Setting  vRatioCO2
+
+endFrame:
+    yield
+    j     start</Instructions>
+</InstructionData>
