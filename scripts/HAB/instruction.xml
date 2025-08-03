@@ -20,7 +20,7 @@ define COOLER_PREFAB         HASH("StructureWallCooler")
 define COOLER_NAME           HASH("Wall Cooler Hab 1")
 
 define GROWLIGHT_PREFAB      HASH("StructureGrowLight")
-define GROWLIGHT_NAME      HASH("Grow Light")
+define GROWLIGHT_NAME        HASH("Grow Light")
 
 define DAYLIGHT_PREFAB       HASH("StructureDaylightSensor")
 define DAYLIGHT_NAME         HASH("Daylight Sensor")
@@ -30,54 +30,54 @@ define KELVIN_OFFSET         273.15
 define TICKS_PER_SCREEN      3
 
 # Aliases
-alias vTempK     r0
-alias vTempC     r1
-alias vO2        r2
-alias vCO2       r3
-alias vScreen    r4
-alias vTick      r5
-alias vLight     r6
+alias vTempK r0
+alias vTempC r1
+alias vO2    r2
+alias vCO2   r3
+alias vScreen r4
+alias vTick   r5
+alias vLight  r6
 
 start:
-    # Read atmospheric data
     lbn vTempK GAS_SENSOR_PREFAB GAS_SENSOR_NAME Temperature Average
     sub vTempC vTempK KELVIN_OFFSET
     lbn vO2    GAS_SENSOR_PREFAB GAS_SENSOR_NAME RatioOxygen Average
     lbn vCO2   GAS_SENSOR_PREFAB GAS_SENSOR_NAME RatioCarbonDioxide Average
 
-    # Heater and cooler control
-    blt vTempC 18 heatOn
-    bgt vTempC 20 heatOff
     bgt vTempC 25 coolOn
+    blt vTempC 18 heatOn
     blt vTempC 23 coolOff
+    bgt vTempC 20 heatOff
 
-    # Grow light control (based on daylight sensor)
     lbn vLight DAYLIGHT_PREFAB DAYLIGHT_NAME SolarIrradiance Sum
     sgt vLight vLight 10
-    beq vLight 0 growOn
+    beq vLight 1 growOn
     sbn GROWLIGHT_PREFAB GROWLIGHT_NAME On 0
     j screenUpdate
 
 growOn:
     sbn GROWLIGHT_PREFAB GROWLIGHT_NAME On 1
+    j screenUpdate
 
-# Heater and cooler control blocks
 heatOn:
-  sbn HEATER_PREFAB HEATER_NAME On 1
-         j continue
+    sbn HEATER_PREFAB HEATER_NAME On 1
+    j continue
+
 heatOff:
- sbn HEATER_PREFAB HEATER_NAME On 0
-         j continue
+    sbn HEATER_PREFAB HEATER_NAME On 0
+    j continue
+
 coolOn:
-  sbn COOLER_PREFAB COOLER_NAME On 1
-         j continue
+    sbn COOLER_PREFAB COOLER_NAME On 1
+    j continue
+
 coolOff:
-  sbn COOLER_PREFAB COOLER_NAME On 0
+    sbn COOLER_PREFAB COOLER_NAME On 0
+    j continue
 
 continue:
     j screenUpdate
 
-# LED display logic
 screenUpdate:
     add vTick vTick 1
     blt vTick TICKS_PER_SCREEN updateScreen
